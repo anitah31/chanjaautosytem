@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chanja Autos - Daily Sales</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <header>
+        <img src="9.png" alt="Chanja Autos Logo" class="logo"  height="200" width="450"/>
+        <h1>Daily Sales Report per Client</h1>
+    </header>
+
+    <main>
+        <section class="sales-form">
+            <h2>Add Daily Sale</h2>
+            <form id="salesForm">
+                <div class="form-group">
+                    <label for="sale-date">Date:</label>
+                    <input type="date" id="sale-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="client-name">Client Name:</label>
+                    <input type="text" id="client-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="item-sold">Item Sold:</label>
+                    <input type="text" id="item-sold" placeholder="Enter Item Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="quantity-sold">Quantity Sold:</label>
+                    <input type="number" id="quantity-sold" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="sale-amount">Amount (KSH):</label>
+                    <input type="number" id="sale-amount" step="0.01" min="0" required>
+                </div>
+                <button type="submit">Add Sale</button>
+            </form>
+        </section>
+
+        <section class="sales-list">
+            <h2>Sales Records</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Item Sold</th>
+                            <th>Quantity</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="credit-sales">
+            <h2>Credit Sales</h2>
+            <form id="creditForm">
+                <div class="form-group">
+                    <label for="credit-client">Client Name:</label>
+                    <input type="text" id="credit-client" required>
+                </div>
+                <div class="form-group">
+                    <label for="credit-amount">Amount (KSH):</label>
+                    <input type="number" id="credit-amount" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="due-date">Due Date:</label>
+                    <input type="date" id="due-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="initial-payment">Initial Payment:</label>
+                    <input type="number" id="initial-payment" step="0.01" min="0" required>
+                </div>
+                <button type="submit">Add Credit</button>
+            </form>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Credit Amount</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
+                            <th>Due Date</th>
+                            <th>Status</th> <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="creditTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+<section class="view-options">
+    <h2>View Records</h2>
+    <div class="filter-controls">
+        <button id="viewSales">View All Sales</button>
+        <button id="viewCredits">View All Credits</button>
+        <input type="date" id="filterDate">
+        <button id="filterByDate">Filter by Date</button>
+    </div>
+</section>
+
+        <div class="total-sales">
+            <h2>Total Sales: <span id="totalSales">0.00</span> KSH</h2>
+        </div>
+    </main>
+
+    <script src="sales.js"></script>
+</body>
+</html>

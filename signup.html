@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chanja Autos - Admin Sign Up</title>
+  <link rel="stylesheet" href="style.css" />
+  
+  <!-- Load Firebase SDKs first -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+  
+  <!-- Initialize Firebase -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const firebaseConfig = {
+        apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
+        authDomain: "chanja-autos-d346c.firebaseapp.com",
+        projectId: "chanja-autos-d346c",
+        storageBucket: "chanja-autos-d346c.appspot.com",
+        messagingSenderId: "316212921555",
+        appId: "1:316212921555:web:6d57b5fa4a59d4b05a4026",
+        measurementId: "G-6204GSZFKC"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      
+      // Make available globally
+      window.auth = firebase.auth();
+      window.db = firebase.firestore();
+      window.firestore = firebase.firestore;
+      
+      console.log("Firebase initialized successfully");
+    });
+  </script>
+</head>
+<body>
+  <div class="signup-container">
+    <img src="9.png" alt="Chanja Autos Logo" class="logo"  height="200" width="450"/>
+    <h1>Create Your Admin Account</h1>
+    <form id="signupForm">
+      <input type="text" id="newUsername" placeholder="Username" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="newPassword" placeholder="Password" required minlength="8" />
+      <button type="submit">Sign Up</button>
+    </form>
+    <p>
+      Already have an account? <a href="index.html">Log in here</a>
+    </p>
+  </div>
+  <!-- Load script.js after Firebase is initialized -->
+  <script src="script.js" defer></script>
+</body>
+</html>
