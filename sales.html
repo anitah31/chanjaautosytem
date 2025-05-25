@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    
 </head>
 <body>
     <header>
@@ -59,6 +64,17 @@
                 </table>
             </div>
         </section>
+        <section class="group-receipt">
+            <h2>Print Group Receipt</h2>
+            <form id="groupReceiptForm">
+                <label for="receipt-client">Client Name:</label>
+                <input type="text" id="receipt-client" required>
+                <label for="receipt-date">Date:</label>
+                <input type="date" id="receipt-date" required>
+                <button type="submit">Print Receipt</button>
+            </form>
+        </section>
+        
 
         <section class="credit-sales">
             <h2>Credit Sales</h2>
