@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function generateGroupReceipt(sale) {
       const shopName = "CHANJA AUTOS";
       const shopAddress = "Address: Roysambu,Lumumba Drive, Nairobi";
-      const shopPhone = "Tel: 0712-345678";
+      const shopPhone = "Tel: +254 721 814009";
       let total = 0;
       let itemRows = [];
       sale.items.forEach(item => {
