@@ -1,65 +1,57 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
-    authDomain: "chanja-autos-d346c.firebaseapp.com",
-    projectId: "chanja-autos-d346c",
-    storageBucket: "chanja-autos-d346c.appspot.com",
-    messagingSenderId: "316212921555",
-    appId: "1:316212921555:web:6d57b5fa4b59d4b05a4026",
-    measurementId: "G-6204GSZFKC"
-  };
-
-  // Initialize Firebase app and Firestore
+  // Initialize Firebase if not already initialized
   if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp({
+      apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
+      authDomain: "chanja-autos-d346c.firebaseapp.com",
+      projectId: "chanja-autos-d346c",
+      storageBucket: "chanja-autos-d346c.appspot.com",
+      messagingSenderId: "316212921555",
+      appId: "1:316212921555:web:6d57b5fa4a59d4b05a4026",
+      measurementId: "G-6204GSZFKC"
+    });
   }
   const db = firebase.firestore();
+  const stockRef = db.collection('stockmgt');
 
-  // DOM Elements
   const stockForm = document.getElementById('stockForm');
   const addItemBtn = document.getElementById('addItemBtn');
   const viewStockBtn = document.getElementById('viewStockBtn');
   const stockTableBody = document.getElementById('stockTableBody');
 
-  // Firestore collection reference
-  const stockRef = db.collection('stockmgt');
-
-  // Track current editing document ID (null if adding new)
   let editingStockId = null;
 
-  // Load stock items and display in table
+  // Load and display stock items
   async function loadStock() {
     try {
       viewStockBtn.disabled = true;
       viewStockBtn.textContent = 'Loading...';
 
-      const querySnapshot = await stockRef.orderBy('createdAt', 'desc').get();
+      const snapshot = await stockRef.orderBy('createdAt', 'desc').get();
 
-      stockTableBody.innerHTML = ''; // Clear table
-
-      if (querySnapshot.empty) {
-        stockTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No stock items found.</td></tr>`;
+      stockTableBody.innerHTML = '';
+      if (snapshot.empty) {
+        stockTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No stock items found.</td></tr>`;
         return;
       }
 
-      querySnapshot.forEach(doc => {
+      snapshot.forEach(doc => {
         const item = doc.data();
+        const totalValue = (item.itemPrice * item.quantity) || 0;
         const row = document.createElement('tr');
-        row.id = `row-${doc.id}`;
         row.innerHTML = `
           <td>${item.itemName}</td>
           <td>${item.description || ''}</td>
           <td>${item.partNumber || ''}</td>
           <td>KSH ${item.itemPrice?.toFixed(2) || '0.00'}</td>
-          <td>${item.quantity || 0}</td>
-          <td>KSH ${(item.itemPrice * item.quantity)?.toFixed(2) || '0.00'}</td>
+          <td>${item.quantity}</td>
+          <td>KSH ${totalValue.toFixed(2)}</td>
           <td><button class="edit-btn" data-id="${doc.id}">Edit</button></td>
         `;
         stockTableBody.appendChild(row);
       });
 
-      // Add event listeners for edit buttons
+      // Attach edit button listeners
       document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const docId = btn.getAttribute('data-id');
@@ -68,7 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = docSnap.data();
             editingStockId = docId;
 
-            // Populate form fields
             stockForm['item-name'].value = data.itemName || '';
             stockForm['description'].value = data.description || '';
             stockForm['part-number'].value = data.partNumber || '';
@@ -81,19 +72,17 @@ document.addEventListener('DOMContentLoaded', function() {
       });
 
     } catch (error) {
-      console.error('Error loading stock:', error);
-      alert('Failed to load stock items: ' + error.message);
+      alert('Error loading stock: ' + error.message);
     } finally {
       viewStockBtn.disabled = false;
       viewStockBtn.textContent = 'View Stock';
     }
   }
 
-  // Handle form submit for add or update
-  stockForm.addEventListener('submit', async function(e) {
+  // Handle add or update stock form submission
+  stockForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Get form values
     const itemName = stockForm['item-name'].value.trim();
     const description = stockForm['description'].value.trim();
     const partNumber = stockForm['part-number'].value.trim();
@@ -112,7 +101,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     try {
       if (editingStockId) {
-        // Update existing stock item
         await stockRef.doc(editingStockId).update({
           itemName,
           description,
@@ -125,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
         editingStockId = null;
         addItemBtn.textContent = 'Add Item';
       } else {
-        // Add new stock item
         await stockRef.add({
           itemName,
           description,
@@ -138,10 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       stockForm.reset();
-      loadStock(); // Refresh stock list
+      loadStock();
 
     } catch (error) {
-      console.error('Error saving stock item:', error);
       alert('Failed to save stock item: ' + error.message);
     } finally {
       addItemBtn.disabled = false;
@@ -149,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // View stock button click handler
+  // View stock button click
   viewStockBtn.addEventListener('click', loadStock);
 
   // Initial load
