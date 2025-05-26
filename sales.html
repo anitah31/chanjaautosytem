@@ -1,133 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chanja Autos - Daily Sales</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-    
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chanja Autos - Daily Sales</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- PDFMake for receipts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 </head>
 <body>
-    <header>
-        <img src="9.png" alt="Chanja Autos Logo" class="logo"  height="200" width="450"/>
-        <h1>Daily Sales Report per Client</h1>
-    </header>
+  <header>
+    <img src="9.png" alt="Chanja Autos Logo" class="logo" height="200" width="450" />
+    <h1>Daily Sales Report per Client</h1>
+  </header>
 
-    <main>
-        <section class="sales-form">
-            <h2>Add Daily Sale</h2>
-            <form id="salesForm">
-                <div class="form-group">
-                    <label for="sale-date">Date:</label>
-                    <input type="date" id="sale-date" required>
-                </div>
-                <div class="form-group">
-                    <label for="client-name">Client Name:</label>
-                    <input type="text" id="client-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="item-sold">Item Sold:</label>
-                    <input type="text" id="item-sold" placeholder="Enter Item Name" required>
-                </div>
-                <div class="form-group">
-                    <label for="quantity-sold">Quantity Sold:</label>
-                    <input type="number" id="quantity-sold" min="1" required>
-                </div>
-                <div class="form-group">
-                    <label for="sale-amount">Amount (KSH):</label>
-                    <input type="number" id="sale-amount" step="0.01" min="0" required>
-                </div>
-                <button type="submit">Add Sale</button>
-            </form>
-        </section>
+  <main>
+    <!-- Add Daily Sale Form -->
+    <section class="sales-form">
+      <h2>Add Daily Sale</h2>
+      <form id="salesForm">
+        <div class="form-group">
+          <label for="sale-date">Date:</label>
+          <input type="date" id="sale-date" required />
+        </div>
+        <div class="form-group">
+          <label for="client-name">Client Name:</label>
+          <input type="text" id="client-name" required />
+        </div>
+        <div class="form-group">
+          <label for="part-number">Part Number:</label>
+          <input type="text" id="part-number" />
+        </div>
+        <div class="form-group">
+          <label for="item-sold">Item Sold:</label>
+          <input type="text" id="item-sold" placeholder="Enter Item Name" required />
+        </div>
+        <div class="form-group">
+          <label for="description">Description:</label>
+          <input type="text" id="description" readonly />
+        </div>
+        <div class="form-group">
+          <label for="quantity-sold">Quantity Sold:</label>
+          <input type="number" id="quantity-sold" min="1" required />
+        </div>
+        <div class="form-group">
+          <label for="sale-amount">Price per Item (KSH):</label>
+          <input type="number" id="sale-amount" step="0.01" min="0" required readonly />
+        </div>
+        <button type="submit">Add Sale</button>
+      </form>
+    </section>
 
-        <section class="sales-list">
-            <h2>Sales Records</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Client</th>
-                            <th>Item Sold</th>
-                            <th>Quantity</th>
-                            <th>Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody id="salesTableBody"></tbody>
-                </table>
-            </div>
-        </section>
-        <section class="group-receipt">
-            <h2>Print Group Receipt</h2>
-            <form id="groupReceiptForm">
-                <label for="receipt-client">Client Name:</label>
-                <input type="text" id="receipt-client" required>
-                <label for="receipt-date">Date:</label>
-                <input type="date" id="receipt-date" required>
-                <button type="submit">Print Receipt</button>
-            </form>
-        </section>
-        
+    <!-- Sales Records Table -->
+    <section class="sales-list">
+      <h2>Sales Records</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Item Sold</th>
+              <th>Description</th>
+              <th>Part Number</th>
+              <th>Quantity</th>
+              <th>Price per Item (KSH)</th>
+              <th>Total Amount (KSH)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="salesTableBody"></tbody>
+        </table>
+      </div>
+    </section>
 
-        <section class="credit-sales">
-            <h2>Credit Sales</h2>
-            <form id="creditForm">
-                <div class="form-group">
-                    <label for="credit-client">Client Name:</label>
-                    <input type="text" id="credit-client" required>
-                </div>
-                <div class="form-group">
-                    <label for="credit-amount">Amount (KSH):</label>
-                    <input type="number" id="credit-amount" step="0.01" min="0" required>
-                </div>
-                <div class="form-group">
-                    <label for="due-date">Due Date:</label>
-                    <input type="date" id="due-date" required>
-                </div>
-                <div class="form-group">
-                    <label for="initial-payment">Initial Payment:</label>
-                    <input type="number" id="initial-payment" step="0.01" min="0" required>
-                </div>
-                <button type="submit">Add Credit</button>
-            </form>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Client</th>
-                            <th>Credit Amount</th>
-                            <th>Paid</th>
-                            <th>Balance</th>
-                            <th>Due Date</th>
-                            <th>Status</th> <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="creditTableBody"></tbody>
-                </table>
-            </div>
-        </section>
-<section class="view-options">
-    <h2>View Records</h2>
-    <div class="filter-controls">
+    <!-- Group Receipt Printing -->
+    <section class="group-receipt">
+      <h2>Print Group Receipt</h2>
+      <form id="groupReceiptForm">
+        <div class="form-group">
+          <label for="receipt-client">Client Name:</label>
+          <input type="text" id="receipt-client" required />
+        </div>
+        <div class="form-group">
+          <label for="receipt-date">Date:</label>
+          <input type="date" id="receipt-date" required />
+        </div>
+        <button type="submit">Print Receipt</button>
+      </form>
+    </section>
+
+    <!-- Credit Sales Section -->
+    <section class="credit-sales">
+      <h2>Credit Sales</h2>
+      <form id="creditForm">
+        <div class="form-group">
+          <label for="credit-client">Client Name:</label>
+          <input type="text" id="credit-client" required />
+        </div>
+        <div class="form-group">
+          <label for="credit-phone">Phone Number:</label>
+          <input type="tel" id="credit-phone" placeholder="+2547XXXXXXXX" required />
+        </div>
+        <div class="form-group">
+          <label for="credit-amount">Amount (KSH):</label>
+          <input type="number" id="credit-amount" step="0.01" min="0" required />
+        </div>
+        <div class="form-group">
+          <label for="due-date">Due Date:</label>
+          <input type="date" id="due-date" required />
+        </div>
+        <div class="form-group">
+          <label for="initial-payment">Initial Payment:</label>
+          <input type="number" id="initial-payment" step="0.01" min="0" required />
+        </div>
+        <button type="submit">Add Credit</button>
+      </form>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Phone Number</th>
+              <th>Credit Amount (KSH)</th>
+              <th>Paid (KSH)</th>
+              <th>Balance (KSH)</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <!-- Removed Actions column -->
+            </tr>
+          </thead>
+          <tbody id="creditTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- View Options -->
+    <section class="view-options">
+      <h2>View Records</h2>
+      <div class="filter-controls">
         <button id="viewSales">View All Sales</button>
         <button id="viewCredits">View All Credits</button>
-        <input type="date" id="filterDate">
+        <input type="date" id="filterDate" />
         <button id="filterByDate">Filter by Date</button>
+      </div>
+    </section>
+
+    <!-- Total Sales Display -->
+    <div class="total-sales">
+      <h2>Total Sales: <span id="totalSales">0.00</span> KSH</h2>
     </div>
-</section>
+  </main>
 
-        <div class="total-sales">
-            <h2>Total Sales: <span id="totalSales">0.00</span> KSH</h2>
-        </div>
-    </main>
-
-    <script src="sales.js"></script>
+  <script src="sales.js"></script>
 </body>
 </html>
