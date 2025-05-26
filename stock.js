@@ -6,12 +6,14 @@ document.addEventListener('DOMContentLoaded', function() {
     projectId: "chanja-autos-d346c",
     storageBucket: "chanja-autos-d346c.appspot.com",
     messagingSenderId: "316212921555",
-    appId: "1:316212921555:web:6d57b5fa4a59d4b05a4026",
+    appId: "1:316212921555:web:6d57b5fa4b59d4b05a4026",
     measurementId: "G-6204GSZFKC"
   };
 
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
+  // Initialize Firebase app and Firestore
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
   const db = firebase.firestore();
 
   // DOM Elements
@@ -19,112 +21,137 @@ document.addEventListener('DOMContentLoaded', function() {
   const addItemBtn = document.getElementById('addItemBtn');
   const viewStockBtn = document.getElementById('viewStockBtn');
   const stockTableBody = document.getElementById('stockTableBody');
-  
-  // Reference to Firestore collection
+
+  // Firestore collection reference
   const stockRef = db.collection('stockmgt');
-  
-  // Function to create delete button
-  function createDeleteButton(docId) {
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.addEventListener('click', async () => {
-      if (confirm('Are you sure you want to delete this item?')) {
-        try {
-          await stockRef.doc(docId).delete();
-          // Remove the row from UI
-          document.getElementById(`row-${docId}`)?.remove();
-        } catch (error) {
-          console.error('Error deleting item:', error);
-          alert('Failed to delete item: ' + error.message);
-        }
-      }
-    });
-    return deleteBtn;
-  }
 
-  // Form submission handler
-  stockForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    // Get form values
-    const itemName = document.getElementById('item-name').value.trim();
-    const itemPrice = parseFloat(document.getElementById('item-price').value);
-    const itemQuantity = parseInt(document.getElementById('item-quantity').value);
-    
-    // Calculate total value
-    const totalValue = itemPrice * itemQuantity;
-    
-    try {
-      // Disable button during processing
-      addItemBtn.disabled = true;
-      addItemBtn.textContent = 'Adding...';
-      
-      // Add to Firestore
-      await stockRef.add({
-        itemName: itemName,
-        itemPrice: itemPrice,
-        quantity: itemQuantity,
-        totalValue: totalValue,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      
-      // Clear form
-      stockForm.reset();
-    } catch (error) {
-      console.error('Error adding item:', error);
-      alert('Failed to add item: ' + error.message);
-    } finally {
-      addItemBtn.disabled = false;
-      addItemBtn.textContent = 'Add Item';
-    }
-  });
+  // Track current editing document ID (null if adding new)
+  let editingStockId = null;
 
-  // View Stock Button Handler
-  viewStockBtn.addEventListener('click', async function() {
+  // Load stock items and display in table
+  async function loadStock() {
     try {
       viewStockBtn.disabled = true;
       viewStockBtn.textContent = 'Loading...';
-      
+
       const querySnapshot = await stockRef.orderBy('createdAt', 'desc').get();
-      
+
+      stockTableBody.innerHTML = ''; // Clear table
+
       if (querySnapshot.empty) {
-        alert("No stock items found in database");
+        stockTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No stock items found.</td></tr>`;
         return;
       }
-      
-      stockTableBody.innerHTML = ''; // Clear current display
-      
-      querySnapshot.forEach((doc) => {
+
+      querySnapshot.forEach(doc => {
         const item = doc.data();
         const row = document.createElement('tr');
-        row.id = `row-${doc.id}`; // Add ID for easy deletion
+        row.id = `row-${doc.id}`;
         row.innerHTML = `
           <td>${item.itemName}</td>
+          <td>${item.description || ''}</td>
+          <td>${item.partNumber || ''}</td>
           <td>KSH ${item.itemPrice?.toFixed(2) || '0.00'}</td>
           <td>${item.quantity || 0}</td>
-          <td>KSH ${item.totalValue?.toFixed(2) || '0.00'}</td>
-          <td class="actions"></td>
+          <td>KSH ${(item.itemPrice * item.quantity)?.toFixed(2) || '0.00'}</td>
+          <td><button class="edit-btn" data-id="${doc.id}">Edit</button></td>
         `;
-        
-        // Add delete button
-        const actionsCell = row.querySelector('.actions');
-        actionsCell.appendChild(createDeleteButton(doc.id));
-        
         stockTableBody.appendChild(row);
       });
-      
+
+      // Add event listeners for edit buttons
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const docId = btn.getAttribute('data-id');
+          const docSnap = await stockRef.doc(docId).get();
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            editingStockId = docId;
+
+            // Populate form fields
+            stockForm['item-name'].value = data.itemName || '';
+            stockForm['description'].value = data.description || '';
+            stockForm['part-number'].value = data.partNumber || '';
+            stockForm['item-price'].value = data.itemPrice || '';
+            stockForm['item-quantity'].value = data.quantity || '';
+
+            addItemBtn.textContent = 'Update Item';
+          }
+        });
+      });
+
     } catch (error) {
-      console.error("Error fetching stock: ", error);
-      alert("Failed to load stock: " + error.message);
+      console.error('Error loading stock:', error);
+      alert('Failed to load stock items: ' + error.message);
     } finally {
       viewStockBtn.disabled = false;
       viewStockBtn.textContent = 'View Stock';
     }
+  }
+
+  // Handle form submit for add or update
+  stockForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    // Get form values
+    const itemName = stockForm['item-name'].value.trim();
+    const description = stockForm['description'].value.trim();
+    const partNumber = stockForm['part-number'].value.trim();
+    const itemPrice = parseFloat(stockForm['item-price'].value);
+    const itemQuantity = parseInt(stockForm['item-quantity'].value);
+
+    if (!itemName || isNaN(itemPrice) || isNaN(itemQuantity)) {
+      alert('Please fill in all required fields correctly.');
+      return;
+    }
+
+    const totalValue = itemPrice * itemQuantity;
+
+    addItemBtn.disabled = true;
+    addItemBtn.textContent = editingStockId ? 'Updating...' : 'Adding...';
+
+    try {
+      if (editingStockId) {
+        // Update existing stock item
+        await stockRef.doc(editingStockId).update({
+          itemName,
+          description,
+          partNumber,
+          itemPrice,
+          quantity: itemQuantity,
+          totalValue,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        editingStockId = null;
+        addItemBtn.textContent = 'Add Item';
+      } else {
+        // Add new stock item
+        await stockRef.add({
+          itemName,
+          description,
+          partNumber,
+          itemPrice,
+          quantity: itemQuantity,
+          totalValue,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      stockForm.reset();
+      loadStock(); // Refresh stock list
+
+    } catch (error) {
+      console.error('Error saving stock item:', error);
+      alert('Failed to save stock item: ' + error.message);
+    } finally {
+      addItemBtn.disabled = false;
+      if (!editingStockId) addItemBtn.textContent = 'Add Item';
+    }
   });
 
-  // Real-time listener for stock updates (optional)
-  stockRef.orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
-    // You could implement real-time updates here if needed
-  });
+  // View stock button click handler
+  viewStockBtn.addEventListener('click', loadStock);
+
+  // Initial load
+  loadStock();
 });
