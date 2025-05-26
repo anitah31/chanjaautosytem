@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             layout: 'noBorders'
           },
-          { text: '----------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
+          { text: '------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
           {
             table: {
               widths: ['*', 'auto'],
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             layout: 'noBorders'
           },
-          { text: '----------------------------------------', alignment: 'center', margin: [0, 10, 0, 0] },
+          { text: '---------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 0] },
           { text: 'THANK YOU!', style: 'footer', margin: [0, 10, 0, 0] }
         ],
         styles: {
