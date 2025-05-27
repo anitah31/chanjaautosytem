@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
           },
           layout: 'lightHorizontalLines'
         },
-        { text: '-----------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
+        { text: '-------------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
         {
           table: {
             widths: ['*', 'auto'],
@@ -131,18 +131,18 @@ document.addEventListener('DOMContentLoaded', function() {
           },
           layout: 'noBorders'
         },
-        { text: '-------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 0] },
+        { text: '------------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 0] },
         { text: 'THANK YOU!', style: 'footer', margin: [0, 10, 0, 0] }
       ],
       styles: {
-        header: { fontSize: 16, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
-        address: { fontSize: 10, alignment: 'center' },
-        subheader: { fontSize: 13, bold: true, alignment: 'center' },
-        client: { fontSize: 11, alignment: 'left' },
-        footer: { fontSize: 12, italics: true, alignment: 'center' }
+        header: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 3] },
+        address: { fontSize: 12, alignment: 'center' },
+        subheader: { fontSize: 12, bold: true, alignment: 'center' },
+        client: { fontSize: 10, alignment: 'left' },
+        footer: { fontSize: 10, italics: true, alignment: 'center' }
       },
       defaultStyle: {
-        fontSize: 11
+        fontSize: 10
       },
       pageSize: { width: 250, height: 'auto' },
       pageMargins: [10, 10, 10, 10]
