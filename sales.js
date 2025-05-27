@@ -95,8 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const docDefinition = {
       content: [
         { text: "CHANJA AUTOS", style: "header" },
-        { text: "Address: Chanja Street, Nairobi", style: "address" },
-        { text: "Tel: 0712-345678", style: "address", margin: [0, 0, 0, 10] },
+        { text: "Address: Roysambu, Lumumba Drive, Nairobi", style: "address" },
+        { text: "Tel: +254 721814009", style: "address", margin: [0, 0, 0, 10] },
         { text: "CASH RECEIPT", style: "subheader", margin: [0, 0, 0, 10] },
         { text: `Client: ${sale.clientName}`, style: "client", margin: [0, 0, 0, 5] },
         { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 10] },
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
           },
           layout: 'lightHorizontalLines'
         },
-        { text: '--------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
+        { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
         {
           table: {
             widths: ['*', 'auto'],
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
       defaultStyle: {
         fontSize: 10
       },
-      pageSize: { width: 250, height: 'auto' },
+      pageSize: { width: 240, height: 'auto' },
       pageMargins: [10, 10, 10, 10]
     };
 
