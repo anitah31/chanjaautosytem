@@ -142,3 +142,86 @@ body {
 .delete-btn:hover {
   background: #c0392b;
 }
+/* Existing styles remain unchanged above... */
+
+/* Receipt Styles */
+.receipt {
+  background: #fff;
+  color: #222;
+  width: 320px;
+  margin: 30px auto;
+  padding: 20px 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.receipt-header {
+  text-align: center;
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.receipt-subheader {
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+.receipt-table th,
+.receipt-table td {
+  border-bottom: 1px dashed #bbb;
+  padding: 4px 0;
+  text-align: left;
+  font-size: 15px;
+}
+.receipt-table th {
+  font-weight: bold;
+}
+
+.receipt-total {
+  text-align: right;
+  font-weight: bold;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.receipt-footer {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Print Styles for Receipt */
+@media print {
+  body {
+    background: none !important;
+  }
+  .receipt {
+    box-shadow: none !important;
+    border: none !important;
+    width: 58mm !important; /* Typical thermal paper width */
+    margin: 0 auto !important;
+    padding: 0 !important;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11px !important;
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+  .receipt-header, .receipt-subheader, .receipt-total, .receipt-footer {
+    color: #000 !important;
+  }
+  /* Hide everything except the receipt when printing */
+  body *:not(.receipt):not(.receipt *) {
+    display: none !important;
+  }
+}
