@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize Firebase if not already initialized
   if (!firebase.apps.length) {
     firebase.initializeApp({
       apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
@@ -18,8 +17,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const addItemBtn = document.getElementById('addItemBtn');
   const viewStockBtn = document.getElementById('viewStockBtn');
   const stockTableBody = document.getElementById('stockTableBody');
+  const filterInput = document.getElementById('filterInput');
 
   let editingStockId = null;
+  let allStockItems = []; // Stores all stock items for filtering
 
   // Load and display stock items
   async function loadStock() {
@@ -29,47 +30,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const snapshot = await stockRef.orderBy('createdAt', 'desc').get();
 
-      stockTableBody.innerHTML = '';
-      if (snapshot.empty) {
-        stockTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No stock items found.</td></tr>`;
-        return;
-      }
-
+      allStockItems = [];
       snapshot.forEach(doc => {
         const item = doc.data();
-        const totalValue = (item.itemPrice * item.quantity) || 0;
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${item.itemName}</td>
-          <td>${item.description || ''}</td>
-          <td>${item.partNumber || ''}</td>
-          <td>KSH ${item.itemPrice?.toFixed(2) || '0.00'}</td>
-          <td>${item.quantity}</td>
-          <td>KSH ${totalValue.toFixed(2)}</td>
-          <td><button class="edit-btn" data-id="${doc.id}">Edit</button></td>
-        `;
-        stockTableBody.appendChild(row);
+        allStockItems.push({ id: doc.id, ...item });
       });
 
-      // Attach edit button listeners
-      document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const docId = btn.getAttribute('data-id');
-          const docSnap = await stockRef.doc(docId).get();
-          if (docSnap.exists) {
-            const data = docSnap.data();
-            editingStockId = docId;
-
-            stockForm['item-name'].value = data.itemName || '';
-            stockForm['description'].value = data.description || '';
-            stockForm['part-number'].value = data.partNumber || '';
-            stockForm['item-price'].value = data.itemPrice || '';
-            stockForm['item-quantity'].value = data.quantity || '';
-
-            addItemBtn.textContent = 'Update Item';
-          }
-        });
-      });
+      displayStock(allStockItems);
 
     } catch (error) {
       alert('Error loading stock: ' + error.message);
@@ -79,7 +46,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Handle add or update stock form submission
+  // Display stock items in table
+  function displayStock(items) {
+    stockTableBody.innerHTML = '';
+    if (items.length === 0) {
+      stockTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No stock items found.</td></tr>`;
+      return;
+    }
+
+    items.forEach(item => {
+      const totalValue = (item.itemPrice * item.quantity) || 0;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${item.itemName}</td>
+        <td>${item.description || ''}</td>
+        <td>${item.partNumber || ''}</td>
+        <td>KSH ${item.itemPrice?.toFixed(2) || '0.00'}</td>
+        <td>${item.quantity}</td>
+        <td>KSH ${totalValue.toFixed(2)}</td>
+        <td><button class="edit-btn" data-id="${item.id}">Edit</button></td>
+      `;
+      stockTableBody.appendChild(row);
+    });
+
+    // Attach edit button listeners
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const docId = btn.getAttribute('data-id');
+        const docSnap = await stockRef.doc(docId).get();
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          editingStockId = docId;
+
+          stockForm['item-name'].value = data.itemName || '';
+          stockForm['description'].value = data.description || '';
+          stockForm['part-number'].value = data.partNumber || '';
+          stockForm['item-price'].value = data.itemPrice || '';
+          stockForm['item-quantity'].value = data.quantity || '';
+
+          addItemBtn.textContent = 'Update Item';
+        }
+      });
+    });
+  }
+
+  // New filter functionality
+  filterInput.addEventListener('input', function() {
+    const filterText = this.value.trim().toLowerCase();
+    const filteredItems = allStockItems.filter(item => 
+      item.itemName.toLowerCase().includes(filterText)
+    );
+    displayStock(filteredItems);
+  });
+
+  // Handle add/update stock
   stockForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -125,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       stockForm.reset();
-      loadStock();
+      loadStock(); // Reload stock to include new/updated items
 
     } catch (error) {
       alert('Failed to save stock item: ' + error.message);
@@ -135,9 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // View stock button click
-  viewStockBtn.addEventListener('click', loadStock);
-
   // Initial load
+  viewStockBtn.addEventListener('click', loadStock);
   loadStock();
 });
