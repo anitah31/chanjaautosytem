@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return d.toISOString().split('T')[0];
   }
 
-  // Print Group Receipt Logic (NO LOGO, WITH ITEM SOLD)
+  // Print Group Receipt Logic (COMPACT 58mm RECEIPT)
   function generateGroupReceipt(sale) {
     let total = 0;
     let itemRows = [];
@@ -79,12 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const lineTotal = item.quantity * item.price;
       total += lineTotal;
       itemRows.push([
-        { text: item.sold, margin: [0, 2, 0, 2] },           // Item Sold
-        { text: item.description, margin: [0, 2, 0, 2] },    // Description
-        { text: item.partNumber || '-', margin: [0, 2, 0, 2] }, // Part No.
-        { text: item.quantity, margin: [0, 2, 0, 2] },       // Qty
-        { text: item.price.toFixed(2), margin: [0, 2, 0, 2] }, // Price
-        { text: lineTotal.toFixed(2), margin: [0, 2, 0, 2] }   // Total
+        { text: item.sold, fontSize: 7, margin: [0, 0, 0, 0] },
+        { text: item.quantity, fontSize: 7, alignment: 'center', margin: [0, 0, 0, 0] },
+        { text: item.price.toFixed(2), fontSize: 7, alignment: 'right', margin: [0, 0, 0, 0] },
+        { text: lineTotal.toFixed(2), fontSize: 7, alignment: 'right', margin: [0, 0, 0, 0] }
       ]);
     });
     const cash = sale.cash !== undefined ? sale.cash : total;
@@ -95,57 +93,65 @@ document.addEventListener('DOMContentLoaded', function() {
     const docDefinition = {
       content: [
         { text: "CHANJA AUTOS", style: "header" },
-        { text: "Address: Roysambu, Lumumba Drive, Nairobi", style: "address" },
-        { text: "Tel: +254 721814009", style: "address", margin: [0, 0, 0, 10] },
-        { text: "CASH RECEIPT", style: "subheader", margin: [0, 0, 0, 10] },
-        { text: `Client: ${sale.clientName}`, style: "client", margin: [0, 0, 0, 5] },
-        { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 10] },
+        { text: "Roysambu, Lumumba Drive, Nairobi", style: "address" },
+        { text: "Tel: +254 721814009", style: "address", margin: [0, 0, 0, 4] },
+        { text: "CASH RECEIPT", style: "subheader", margin: [0, 0, 0, 4] },
+        { text: `Client: ${sale.clientName}`, style: "client", margin: [0, 0, 0, 2] },
+        { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 4] },
         {
           table: {
-            widths: ['*', '*', 'auto', 'auto', 'auto', 'auto'],
+            headerRows: 1,
+            widths: [55, 15, 25, 25], // Adjusted for 58mm roll
             body: [
               [
-                { text: 'Item Sold', bold: true },
-                { text: 'Description', bold: true },
-                { text: 'Part No.', bold: true },
-                { text: 'Qty', bold: true },
-                { text: 'Price', bold: true },
-                { text: 'Total', bold: true }
+                { text: 'Item', bold: true, fontSize: 7 },
+                { text: 'Qty', bold: true, fontSize: 7, alignment: 'center' },
+                { text: 'Price', bold: true, fontSize: 7, alignment: 'right' },
+                { text: 'Total', bold: true, fontSize: 7, alignment: 'right' }
               ],
               ...itemRows
             ]
           },
-          layout: 'lightHorizontalLines'
+          layout: {
+            hLineWidth: function() { return 0.3; },
+            vLineWidth: function() { return 0.3; },
+            hLineColor: function() { return '#aaa'; },
+            vLineColor: function() { return '#aaa'; },
+            paddingLeft: function() { return 1; },
+            paddingRight: function() { return 1; },
+            paddingTop: function() { return 0; },
+            paddingBottom: function() { return 0; }
+          },
+          margin: [0, 2, 0, 2]
         },
-        { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
         {
           table: {
-            widths: ['*', 'auto'],
+            widths: [55, 65],
             body: [
-              [{ text: 'Total', bold: true }, { text: total.toFixed(2), alignment: 'right' }],
-              [{ text: 'Cash', bold: true }, { text: cash.toFixed(2), alignment: 'right' }],
-              [{ text: 'Change', bold: true }, { text: change.toFixed(2), alignment: 'right' }],
-              ...(bankCard ? [[{ text: 'Bank card', bold: true }, { text: bankCard, alignment: 'right' }]] : []),
-              ...(approvalCode ? [[{ text: 'Approval Code', bold: true }, { text: approvalCode, alignment: 'right' }]] : [])
+              [{ text: 'Total', fontSize: 8, bold: true }, { text: total.toFixed(2), fontSize: 8, alignment: 'right' }],
+              [{ text: 'Cash', fontSize: 8 }, { text: cash.toFixed(2), fontSize: 8, alignment: 'right' }],
+              [{ text: 'Change', fontSize: 8 }, { text: change.toFixed(2), fontSize: 8, alignment: 'right' }],
+              ...(bankCard ? [[{ text: 'Bank card', fontSize: 8 }, { text: bankCard, fontSize: 8, alignment: 'right' }]] : []),
+              ...(approvalCode ? [[{ text: 'Approval Code', fontSize: 8 }, { text: approvalCode, fontSize: 8, alignment: 'right' }]] : [])
             ]
           },
-          layout: 'noBorders'
+          layout: 'noBorders',
+          margin: [0, 2, 0, 2]
         },
-        { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 0] },
-        { text: 'THANK YOU!', style: 'footer', margin: [0, 10, 0, 0] }
+        { text: 'THANK YOU!', style: 'footer', margin: [0, 5, 0, 0] }
       ],
       styles: {
-        header: { fontSize: 12, bold: true, alignment: 'center', margin: [0, 0, 0, 3] },
-        address: { fontSize: 12, alignment: 'center' },
-        subheader: { fontSize: 12, bold: true, alignment: 'center' },
-        client: { fontSize: 10, alignment: 'left' },
-        footer: { fontSize: 10, italics: true, alignment: 'center' }
+        header: { fontSize: 9, bold: true, alignment: 'center', margin: [0, 0, 0, 1] },
+        address: { fontSize: 7, alignment: 'center' },
+        subheader: { fontSize: 8, bold: true, alignment: 'center' },
+        client: { fontSize: 7, alignment: 'left' },
+        footer: { fontSize: 8, italics: true, alignment: 'center' }
       },
       defaultStyle: {
-        fontSize: 10
+        fontSize: 7
       },
-      pageSize: { width: 240, height: 'auto' },
-      pageMargins: [10, 10, 10, 10]
+      pageSize: { width: 165, height: 'auto' }, // 58mm = ~165pt
+      pageMargins: [4, 4, 4, 4]
     };
 
     pdfMake.createPdf(docDefinition).print();
