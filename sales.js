@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize Firebase
+  // Firebase config and initialization
   const firebaseConfig = {
     apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
     authDomain: "chanja-autos-d346c.firebaseapp.com",
@@ -29,8 +29,66 @@ document.addEventListener('DOMContentLoaded', function() {
   const itemSoldInput = document.getElementById('item-sold');
   const descriptionInput = document.getElementById('description');
   const saleAmountInput = document.getElementById('sale-amount');
+  const creditPartNumberInput = document.getElementById('credit-part-number');
+  const creditItemSoldInput = document.getElementById('credit-item-sold');
+  const creditDescriptionInput = document.getElementById('credit-description');
+  const salesRecordSelect = document.getElementById('sales-record-select');
 
-  // Auto-fill item details when part number is entered
+  // Load sales for credit form dropdown
+  async function loadSalesForCredit() {
+    if (!salesRecordSelect) return;
+    const snapshot = await db.collection('sales').orderBy('timestamp', 'desc').limit(50).get();
+    salesRecordSelect.innerHTML = '<option value="">Select Sale Record</option>';
+    snapshot.forEach(doc => {
+      const sale = doc.data();
+      const option = document.createElement('option');
+      option.value = doc.id;
+      option.textContent = `${sale.date} - ${sale.itemSold} (${sale.partNumber || ''})`;
+      option.dataset.itemSold = sale.itemSold || '';
+      option.dataset.partNumber = sale.partNumber || '';
+      option.dataset.description = sale.description || '';
+      salesRecordSelect.appendChild(option);
+    });
+  }
+  if (salesRecordSelect) {
+    salesRecordSelect.addEventListener('change', function() {
+      const selected = salesRecordSelect.options[salesRecordSelect.selectedIndex];
+      creditItemSoldInput.value = selected.dataset.itemSold || '';
+      creditPartNumberInput.value = selected.dataset.partNumber || '';
+      creditDescriptionInput.value = selected.dataset.description || '';
+    });
+    loadSalesForCredit();
+  }
+
+  // Credit part number manual entry auto-fill
+  if (creditPartNumberInput) {
+    creditPartNumberInput.addEventListener('input', async function() {
+      const partNumber = this.value.trim();
+      if (!partNumber) {
+        creditItemSoldInput.value = '';
+        creditDescriptionInput.value = '';
+        return;
+      }
+      try {
+        const stockQuery = await db.collection('stockmgt')
+          .where('partNumber', '==', partNumber)
+          .limit(1)
+          .get();
+        if (!stockQuery.empty) {
+          const stockItem = stockQuery.docs[0].data();
+          creditItemSoldInput.value = stockItem.itemName || '';
+          creditDescriptionInput.value = stockItem.description || '';
+        } else {
+          creditItemSoldInput.value = '';
+          creditDescriptionInput.value = '';
+        }
+      } catch (error) {
+        console.error('Error fetching stock by part number:', error);
+      }
+    });
+  }
+
+  // Auto-fill item details when part number is entered (cash sale)
   if (partNumberInput) {
     partNumberInput.addEventListener('input', async function() {
       const partNumber = this.value.trim();
@@ -71,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return d.toISOString().split('T')[0];
   }
 
-  // Print Group Receipt Logic (COMPACT 58mm RECEIPT)
+  // Print Group Receipt Logic (NO LINES, font size 5, includes description and part number)
   function generateGroupReceipt(sale) {
     let total = 0;
     let itemRows = [];
@@ -79,10 +137,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const lineTotal = item.quantity * item.price;
       total += lineTotal;
       itemRows.push([
-        { text: item.sold, fontSize: 7, margin: [0, 0, 0, 0] },
-        { text: item.quantity, fontSize: 7, alignment: 'center', margin: [0, 0, 0, 0] },
-        { text: item.price.toFixed(2), fontSize: 7, alignment: 'right', margin: [0, 0, 0, 0] },
-        { text: lineTotal.toFixed(2), fontSize: 7, alignment: 'right', margin: [0, 0, 0, 0] }
+        { text: item.sold, fontSize: 5, margin: [0, 0, 0, 0] },
+        { text: item.description, fontSize: 5, margin: [0, 0, 0, 0] },
+        { text: item.partNumber || '-', fontSize: 5, margin: [0, 0, 0, 0] },
+        { text: item.quantity, fontSize: 5, alignment: 'center', margin: [0, 0, 0, 0] },
+        { text: item.price.toFixed(2), fontSize: 5, alignment: 'right', margin: [0, 0, 0, 0] },
+        { text: lineTotal.toFixed(2), fontSize: 5, alignment: 'right', margin: [0, 0, 0, 0] }
       ]);
     });
     const cash = sale.cash !== undefined ? sale.cash : total;
@@ -93,62 +153,61 @@ document.addEventListener('DOMContentLoaded', function() {
     const docDefinition = {
       content: [
         { text: "CHANJA AUTOS", style: "header" },
-        { text: "Roysambu, Lumumba Drive, Nairobi", style: "address" },
-        { text: "Tel: +254 721814009", style: "address", margin: [0, 0, 0, 4] },
-        { text: "CASH RECEIPT", style: "subheader", margin: [0, 0, 0, 4] },
-        { text: `Client: ${sale.clientName}`, style: "client", margin: [0, 0, 0, 2] },
-        { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 4] },
+        { text: "Address: Roysambu, Lumumba Drive, Nairobi", style: "address" },
+        { text: "Tel: +254 721814009", style: "address", margin: [0, 0, 0, 10] },
+        { text: "CASH RECEIPT", style: "subheader", margin: [0, 0, 0, 10] },
+        { text: `Client: ${sale.clientName}`, style: "client", margin: [0, 0, 0, 5] },
+        { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 10] },
         {
           table: {
-            headerRows: 1,
-            widths: [55, 15, 25, 25], // Adjusted for 58mm roll
+            widths: ['*', '*', '*', 'auto', 'auto', 'auto'],
             body: [
               [
-                { text: 'Item', bold: true, fontSize: 7 },
-                { text: 'Qty', bold: true, fontSize: 7, alignment: 'center' },
-                { text: 'Price', bold: true, fontSize: 7, alignment: 'right' },
-                { text: 'Total', bold: true, fontSize: 7, alignment: 'right' }
+                { text: 'Item', bold: true, fontSize: 5 },
+                { text: 'Desc', bold: true, fontSize: 5 },
+                { text: 'Part No.', bold: true, fontSize: 5 },
+                { text: 'Qty', bold: true, fontSize: 5 },
+                { text: 'Price', bold: true, fontSize: 5 },
+                { text: 'Total', bold: true, fontSize: 5 }
               ],
               ...itemRows
             ]
           },
           layout: {
-            hLineWidth: function() { return 0.3; },
-            vLineWidth: function() { return 0.3; },
-            hLineColor: function() { return '#aaa'; },
-            vLineColor: function() { return '#aaa'; },
-            paddingLeft: function() { return 1; },
-            paddingRight: function() { return 1; },
+            hLineWidth: function() { return 0; },
+            vLineWidth: function() { return 0; },
+            paddingLeft: function() { return 0; },
+            paddingRight: function() { return 0; },
             paddingTop: function() { return 0; },
             paddingBottom: function() { return 0; }
-          },
-          margin: [0, 2, 0, 2]
+          }
         },
+        { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
         {
           table: {
-            widths: [55, 65],
+            widths: ['*', 'auto'],
             body: [
-              [{ text: 'Total', fontSize: 8, bold: true }, { text: total.toFixed(2), fontSize: 8, alignment: 'right' }],
-              [{ text: 'Cash', fontSize: 8 }, { text: cash.toFixed(2), fontSize: 8, alignment: 'right' }],
-              [{ text: 'Change', fontSize: 8 }, { text: change.toFixed(2), fontSize: 8, alignment: 'right' }],
-              ...(bankCard ? [[{ text: 'Bank card', fontSize: 8 }, { text: bankCard, fontSize: 8, alignment: 'right' }]] : []),
-              ...(approvalCode ? [[{ text: 'Approval Code', fontSize: 8 }, { text: approvalCode, fontSize: 8, alignment: 'right' }]] : [])
+              [{ text: 'Total', bold: true, fontSize: 5 }, { text: total.toFixed(2), alignment: 'right', fontSize: 5 }],
+              [{ text: 'Cash', bold: true, fontSize: 5 }, { text: cash.toFixed(2), alignment: 'right', fontSize: 5 }],
+              [{ text: 'Change', bold: true, fontSize: 5 }, { text: change.toFixed(2), alignment: 'right', fontSize: 5 }],
+              ...(bankCard ? [[{ text: 'Bank card', bold: true, fontSize: 5 }, { text: bankCard, alignment: 'right', fontSize: 5 }]] : []),
+              ...(approvalCode ? [[{ text: 'Approval Code', bold: true, fontSize: 5 }, { text: approvalCode, alignment: 'right', fontSize: 5 }]] : [])
             ]
           },
-          layout: 'noBorders',
-          margin: [0, 2, 0, 2]
+          layout: 'noBorders'
         },
-        { text: 'THANK YOU!', style: 'footer', margin: [0, 5, 0, 0] }
+        { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 0] },
+        { text: 'THANK YOU!', style: 'footer', margin: [0, 10, 0, 0] }
       ],
       styles: {
-        header: { fontSize: 9, bold: true, alignment: 'center', margin: [0, 0, 0, 1] },
-        address: { fontSize: 7, alignment: 'center' },
-        subheader: { fontSize: 8, bold: true, alignment: 'center' },
-        client: { fontSize: 7, alignment: 'left' },
-        footer: { fontSize: 8, italics: true, alignment: 'center' }
+        header: { fontSize: 7, bold: true, alignment: 'center', margin: [0, 0, 0, 2] },
+        address: { fontSize: 5, alignment: 'center' },
+        subheader: { fontSize: 6, bold: true, alignment: 'center' },
+        client: { fontSize: 5, alignment: 'left' },
+        footer: { fontSize: 5, italics: true, alignment: 'center' }
       },
       defaultStyle: {
-        fontSize: 7
+        fontSize: 5
       },
       pageSize: { width: 165, height: 'auto' }, // 58mm = ~165pt
       pageMargins: [4, 4, 4, 4]
@@ -157,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
     pdfMake.createPdf(docDefinition).print();
   }
 
-  // Group Receipt Print Handler (builds items with 'sold' field)
+  // Group Receipt Print Handler
   if (groupReceiptForm) {
     groupReceiptForm.addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -202,7 +261,6 @@ document.addEventListener('DOMContentLoaded', function() {
     deleteBtn.addEventListener('click', async () => {
       if (confirm('Are you sure you want to delete this record?')) {
         try {
-          // If deleting a sale, increment stock accordingly
           if (collection === 'sales') {
             const itemName = row.cells[2].textContent;
             const partNumber = row.cells[4].textContent;
@@ -260,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // CREDIT SALES TABLE WITH OVERDUE HIGHLIGHT (NO SMS)
+  // CREDIT SALES TABLE WITH ITEM, PART NO, DESCRIPTION
   function loadCredits(query = db.collection("credits").orderBy("timestamp", "desc")) {
     creditTableBody.innerHTML = '';
     query.onSnapshot((snapshot) => {
@@ -289,6 +347,9 @@ document.addEventListener('DOMContentLoaded', function() {
         row.innerHTML = `
           ${clientNameCell}
           <td>${credit.phoneNumber || 'N/A'}</td>
+          <td>${credit.itemSold || ''}</td>
+          <td>${credit.partNumber || ''}</td>
+          <td>${credit.description || ''}</td>
           <td>KSH ${credit.amount.toFixed(2)}</td>
           <td>KSH ${credit.paid.toFixed(2)}</td>
           <td>KSH ${balance.toFixed(2)}</td>
@@ -362,6 +423,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const amount = parseFloat(document.getElementById('credit-amount').value);
     const dueDate = document.getElementById('due-date').value;
     const initialPayment = parseFloat(document.getElementById('initial-payment').value);
+    const partNumber = creditPartNumberInput ? creditPartNumberInput.value.trim() : '';
+    const itemSold = creditItemSoldInput ? creditItemSoldInput.value.trim() : '';
+    const description = creditDescriptionInput ? creditDescriptionInput.value.trim() : '';
     if (!client || !phoneNumber || !amount || !dueDate || isNaN(initialPayment)) {
       alert('Please fill all fields correctly.');
       return;
@@ -379,7 +443,10 @@ document.addEventListener('DOMContentLoaded', function() {
         dueDate,
         status: initialPayment >= amount ? 'cleared' : 'pending',
         notifiedOverdue: false,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        partNumber,
+        itemSold,
+        description
       });
       creditForm.reset();
       loadCredits();
