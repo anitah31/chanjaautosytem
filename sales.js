@@ -141,8 +141,8 @@ function generateGroupReceipt(sale) {
       { text: item.description, fontSize: 5, margin: [0, 0, 0, 0] },
       { text: item.partNumber || '-', fontSize: 5, margin: [0, 0, 0, 0] },
       { text: item.quantity, fontSize: 5, alignment: 'center', margin: [0, 0, 0, 0] },
-      { text: item.price.toFixed(2), fontSize: 5, alignment: 'right', margin: [0, 0, 0, 0] },
-      { text: lineTotal.toFixed(2), fontSize: 5, alignment: 'right', margin: [0, 0, 0, 0] }
+      { text: item.price.toFixed(2), fontSize: 5, alignment: 'right', margin: [0, 0, 0, 0] }
+      // No Total column here!
     ]);
   });
   const cash = sale.cash !== undefined ? sale.cash : total;
@@ -160,7 +160,7 @@ function generateGroupReceipt(sale) {
       { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 10] },
       {
         table: {
-          widths: [38, 33, 28, 13, 23, 23], // Adjusted for 58mm, spaced out
+          widths: [38, 33, 28, 13, 23], // Adjusted widths for 58mm, no Total column
           body: [
             [
               { text: 'Item', bold: true, fontSize: 5 },
@@ -168,7 +168,6 @@ function generateGroupReceipt(sale) {
               { text: 'Part No.', bold: true, fontSize: 5 },
               { text: 'Qty', bold: true, fontSize: 5, alignment: 'center' },
               { text: 'Price', bold: true, fontSize: 5, alignment: 'right' }
-             
             ],
             ...itemRows
           ]
@@ -215,6 +214,7 @@ function generateGroupReceipt(sale) {
 
   pdfMake.createPdf(docDefinition).print();
 }
+
 
 
   // Group Receipt Print Handler
