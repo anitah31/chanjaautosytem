@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Firebase config and initialization
+  // Initialize Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
     authDomain: "chanja-autos-d346c.firebaseapp.com",
@@ -29,38 +29,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const itemSoldInput = document.getElementById('item-sold');
   const descriptionInput = document.getElementById('description');
   const saleAmountInput = document.getElementById('sale-amount');
+  const clientPhoneInput = document.getElementById('client-phone');
+
+  // Credit sale auto-fill
   const creditPartNumberInput = document.getElementById('credit-part-number');
   const creditItemSoldInput = document.getElementById('credit-item-sold');
   const creditDescriptionInput = document.getElementById('credit-description');
-  const salesRecordSelect = document.getElementById('sales-record-select');
 
-  // Load sales for credit form dropdown
-  async function loadSalesForCredit() {
-    if (!salesRecordSelect) return;
-    const snapshot = await db.collection('sales').orderBy('timestamp', 'desc').limit(50).get();
-    salesRecordSelect.innerHTML = '<option value="">Select Sale Record</option>';
-    snapshot.forEach(doc => {
-      const sale = doc.data();
-      const option = document.createElement('option');
-      option.value = doc.id;
-      option.textContent = `${sale.date} - ${sale.itemSold} (${sale.partNumber || ''})`;
-      option.dataset.itemSold = sale.itemSold || '';
-      option.dataset.partNumber = sale.partNumber || '';
-      option.dataset.description = sale.description || '';
-      salesRecordSelect.appendChild(option);
-    });
-  }
-  if (salesRecordSelect) {
-    salesRecordSelect.addEventListener('change', function() {
-      const selected = salesRecordSelect.options[salesRecordSelect.selectedIndex];
-      creditItemSoldInput.value = selected.dataset.itemSold || '';
-      creditPartNumberInput.value = selected.dataset.partNumber || '';
-      creditDescriptionInput.value = selected.dataset.description || '';
-    });
-    loadSalesForCredit();
-  }
-
-  // Credit part number manual entry auto-fill
+  // Auto-fill for credit sales from part number
   if (creditPartNumberInput) {
     creditPartNumberInput.addEventListener('input', async function() {
       const partNumber = this.value.trim();
@@ -130,94 +106,92 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Print Group Receipt Logic (NO LINES, font size 5, includes description and part number)
-function generateGroupReceipt(sale) {
-  let total = 0;
-  let itemRows = [];
-  sale.items.forEach(item => {
-    const lineTotal = item.quantity * item.price;
-    total += lineTotal;
-    itemRows.push([
-      { text: item.sold, fontSize: 5, margin: [0, 0, 0, 0] },
-      { text: item.description, fontSize: 5, margin: [0, 0, 0, 0] },
-      { text: item.partNumber || '-', fontSize: 5, margin: [0, 0, 0, 0] },
-      { text: item.quantity, fontSize: 5, alignment: 'center', margin: [0, 0, 0, 0] },
-      { text: item.price.toFixed(2), fontSize: 5, alignment: 'right', margin: [0, 0, 0, 0] }
-      // No Total column here!
-    ]);
-  });
-  const cash = sale.cash !== undefined ? sale.cash : total;
-  const change = (cash - total) > 0 ? (cash - total) : 0;
-  const bankCard = sale.bankCard || "";
-  const approvalCode = sale.approvalCode || "";
+  function generateGroupReceipt(sale) {
+    let total = 0;
+    let itemRows = [];
+    sale.items.forEach(item => {
+      const lineTotal = item.quantity * item.price;
+      total += lineTotal;
+      itemRows.push([
+        { text: item.sold, fontSize: 5, margin: [0, 0, 0, 0] },
+        { text: item.description, fontSize: 5, margin: [0, 0, 0, 0] },
+        { text: item.partNumber || '-', fontSize: 5, margin: [0, 0, 0, 0] },
+        { text: item.quantity, fontSize: 5, alignment: 'center', margin: [0, 0, 0, 0] },
+        { text: item.price.toFixed(2), fontSize: 5, alignment: 'right', margin: [0, 0, 0, 0] }
+      ]);
+    });
+    const cash = sale.cash !== undefined ? sale.cash : total;
+    const change = (cash - total) > 0 ? (cash - total) : 0;
+    const bankCard = sale.bankCard || "";
+    const approvalCode = sale.approvalCode || "";
 
-  const docDefinition = {
-    content: [
-      { text: "CHANJA AUTOS", style: "header" },
-      { text: "Address: Roysambu, Lumumba Drive, Nairobi", style: "address" },
-      { text: "Tel: +254 721814009", style: "address", margin: [0, 0, 0, 10] },
-      { text: "CASH RECEIPT", style: "subheader", margin: [0, 0, 0, 10] },
-      { text: `Client: ${sale.clientName}`, style: "client", margin: [0, 0, 0, 5] },
-      { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 10] },
-      {
-        table: {
-          widths: [38, 33, 28, 13, 23], // Adjusted widths for 58mm, no Total column
-          body: [
-            [
-              { text: 'Item', bold: true, fontSize: 5 },
-              { text: 'Desc', bold: true, fontSize: 5 },
-              { text: 'Part No.', bold: true, fontSize: 5 },
-              { text: 'Qty', bold: true, fontSize: 5, alignment: 'center' },
-              { text: 'Price', bold: true, fontSize: 5, alignment: 'right' }
-            ],
-            ...itemRows
-          ]
+    const docDefinition = {
+      content: [
+        { text: "CHANJA AUTOS", style: "header" },
+        { text: "Address: Roysambu, Lumumba Drive, Nairobi", style: "address" },
+        { text: "Tel: +254 721814009", style: "address", margin: [0, 0, 0, 10] },
+        { text: "CASH RECEIPT", style: "subheader", margin: [0, 0, 0, 10] },
+        { text: `Client: ${sale.clientName}`, style: "client", margin: [0, 0, 0, 2] },
+        { text: `Phone: ${sale.clientPhone || ''}`, style: "client", margin: [0, 0, 0, 2] },
+        { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 10] },
+        {
+          table: {
+            widths: [38, 33, 28, 13, 23], // Adjusted for 58mm, no Total column
+            body: [
+              [
+                { text: 'Item', bold: true, fontSize: 5 },
+                { text: 'Desc', bold: true, fontSize: 5 },
+                { text: 'Part No.', bold: true, fontSize: 5 },
+                { text: 'Qty', bold: true, fontSize: 5, alignment: 'center' },
+                { text: 'Price', bold: true, fontSize: 5, alignment: 'right' }
+              ],
+              ...itemRows
+            ]
+          },
+          layout: {
+            hLineWidth: function() { return 0; },
+            vLineWidth: function() { return 0; },
+            paddingLeft: function() { return 1; },
+            paddingRight: function() { return 1; },
+            paddingTop: function() { return 0; },
+            paddingBottom: function() { return 0; }
+          }
         },
-        layout: {
-          hLineWidth: function() { return 0; },
-          vLineWidth: function() { return 0; },
-          paddingLeft: function() { return 1; },
-          paddingRight: function() { return 1; },
-          paddingTop: function() { return 0; },
-          paddingBottom: function() { return 0; }
-        }
-      },
-      { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
-      {
-        table: {
-          widths: ['*', 'auto'],
-          body: [
-            [{ text: 'Total', bold: true, fontSize: 5 }, { text: total.toFixed(2), alignment: 'right', fontSize: 5 }],
-            [{ text: 'Cash', bold: true, fontSize: 5 }, { text: cash.toFixed(2), alignment: 'right', fontSize: 5 }],
-            [{ text: 'Change', bold: true, fontSize: 5 }, { text: change.toFixed(2), alignment: 'right', fontSize: 5 }],
-            ...(bankCard ? [[{ text: 'Bank card', bold: true, fontSize: 5 }, { text: bankCard, alignment: 'right', fontSize: 5 }]] : []),
-            ...(approvalCode ? [[{ text: 'Approval Code', bold: true, fontSize: 5 }, { text: approvalCode, alignment: 'right', fontSize: 5 }]] : [])
-          ]
+        { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 10] },
+        {
+          table: {
+            widths: ['*', 'auto'],
+            body: [
+              [{ text: 'Total', bold: true, fontSize: 5 }, { text: total.toFixed(2), alignment: 'right', fontSize: 5 }],
+              [{ text: 'Cash', bold: true, fontSize: 5 }, { text: cash.toFixed(2), alignment: 'right', fontSize: 5 }],
+              [{ text: 'Change', bold: true, fontSize: 5 }, { text: change.toFixed(2), alignment: 'right', fontSize: 5 }],
+              ...(bankCard ? [[{ text: 'Bank card', bold: true, fontSize: 5 }, { text: bankCard, alignment: 'right', fontSize: 5 }]] : []),
+              ...(approvalCode ? [[{ text: 'Approval Code', bold: true, fontSize: 5 }, { text: approvalCode, alignment: 'right', fontSize: 5 }]] : [])
+            ]
+          },
+          layout: 'noBorders'
         },
-        layout: 'noBorders'
+        { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 0] },
+        { text: 'THANK YOU!', style: 'footer', margin: [0, 10, 0, 0] }
+      ],
+      styles: {
+        header: { fontSize: 7, bold: true, alignment: 'center', margin: [0, 0, 0, 2] },
+        address: { fontSize: 5, alignment: 'center' },
+        subheader: { fontSize: 6, bold: true, alignment: 'center' },
+        client: { fontSize: 5, alignment: 'left' },
+        footer: { fontSize: 5, italics: true, alignment: 'center' }
       },
-      { text: '-------------------------------------------------------------------------', alignment: 'center', margin: [0, 10, 0, 0] },
-      { text: 'THANK YOU!', style: 'footer', margin: [0, 10, 0, 0] }
-    ],
-    styles: {
-      header: { fontSize: 7, bold: true, alignment: 'center', margin: [0, 0, 0, 2] },
-      address: { fontSize: 5, alignment: 'center' },
-      subheader: { fontSize: 6, bold: true, alignment: 'center' },
-      client: { fontSize: 5, alignment: 'left' },
-      footer: { fontSize: 5, italics: true, alignment: 'center' }
-    },
-    defaultStyle: {
-      fontSize: 5
-    },
-    pageSize: { width: 165, height: 'auto' }, // 58mm = ~165pt
-    pageMargins: [4, 4, 4, 4]
-  };
+      defaultStyle: {
+        fontSize: 5
+      },
+      pageSize: { width: 165, height: 'auto' }, // 58mm = ~165pt
+      pageMargins: [4, 4, 4, 4]
+    };
 
-  pdfMake.createPdf(docDefinition).print();
-}
+    pdfMake.createPdf(docDefinition).print();
+  }
 
-
-
-  // Group Receipt Print Handler
+  // Group Receipt Print Handler (builds items with 'sold' field)
   if (groupReceiptForm) {
     groupReceiptForm.addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -232,6 +206,7 @@ function generateGroupReceipt(sale) {
         return;
       }
       const items = [];
+      let clientPhone = '';
       salesSnapshot.forEach(doc => {
         const sale = doc.data();
         items.push({
@@ -241,6 +216,7 @@ function generateGroupReceipt(sale) {
           quantity: sale.quantitySold,
           price: sale.price || (sale.amount / sale.quantitySold)
         });
+        if (!clientPhone && sale.clientPhone) clientPhone = sale.clientPhone;
       });
       let total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       let cash = parseFloat(prompt("Enter cash received for this group sale:", total)) || total;
@@ -248,7 +224,8 @@ function generateGroupReceipt(sale) {
         items: items,
         cash: cash,
         date: date,
-        clientName: clientName
+        clientName: clientName,
+        clientPhone: clientPhone
       };
       generateGroupReceipt(saleForReceipt);
     });
@@ -262,10 +239,11 @@ function generateGroupReceipt(sale) {
     deleteBtn.addEventListener('click', async () => {
       if (confirm('Are you sure you want to delete this record?')) {
         try {
+          // If deleting a sale, increment stock accordingly
           if (collection === 'sales') {
-            const itemName = row.cells[2].textContent;
-            const partNumber = row.cells[4].textContent;
-            const quantitySold = parseInt(row.cells[5].textContent);
+            const itemName = row.cells[3].textContent;
+            const partNumber = row.cells[5].textContent;
+            const quantitySold = parseInt(row.cells[6].textContent);
             let stockQuery;
             if (partNumber && partNumber !== '') {
               stockQuery = db.collection('stockmgt').where('partNumber', '==', partNumber);
@@ -305,6 +283,7 @@ function generateGroupReceipt(sale) {
         row.innerHTML = `
           <td>${sale.date}</td>
           <td>${sale.clientName}</td>
+          <td>${sale.clientPhone || ''}</td>
           <td>${sale.itemSold}</td>
           <td>${sale.description || ''}</td>
           <td>${sale.partNumber || ''}</td>
@@ -377,10 +356,12 @@ function generateGroupReceipt(sale) {
     const partNumber = partNumberInput.value.trim();
     const description = descriptionInput.value.trim();
     const pricePerItem = parseFloat(saleAmountInput.value);
+    const clientPhone = clientPhoneInput ? clientPhoneInput.value.trim() : '';
     const totalAmount = pricePerItem * quantitySold;
     const sale = {
       date: document.getElementById('sale-date').value,
       clientName: document.getElementById('client-name').value,
+      clientPhone: clientPhone,
       itemSold: itemSoldName,
       description: description,
       partNumber: partNumber,
@@ -410,12 +391,12 @@ function generateGroupReceipt(sale) {
         descriptionInput.readOnly = false;
         itemSoldInput.value = '';
         descriptionInput.value = '';
+        if (clientPhoneInput) clientPhoneInput.value = '';
       });
     } catch (error) {
       alert("Error recording sale: " + error.message);
     }
   });
-
   // CREDIT FORM SUBMIT
   creditForm.addEventListener('submit', async (e) => {
     e.preventDefault();
