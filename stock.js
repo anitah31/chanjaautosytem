@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Firebase if not already initialized
   if (!firebase.apps.length) {
     firebase.initializeApp({
       apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
@@ -18,9 +19,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const viewStockBtn = document.getElementById('viewStockBtn');
   const stockTableBody = document.getElementById('stockTableBody');
   const filterInput = document.getElementById('filterInput');
+  const stockDateInput = document.getElementById('stock-date');
 
   let editingStockId = null;
   let allStockItems = []; // Stores all stock items for filtering
+
+  // Helper to format date
+  function stockDateFormatted(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString();
+  }
 
   // Load and display stock items
   async function loadStock() {
@@ -50,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function displayStock(items) {
     stockTableBody.innerHTML = '';
     if (items.length === 0) {
-      stockTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No stock items found.</td></tr>`;
+      stockTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No stock items found.</td></tr>`;
       return;
     }
 
@@ -61,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <td>${item.itemName}</td>
         <td>${item.description || ''}</td>
         <td>${item.partNumber || ''}</td>
+        <td>${stockDateFormatted(item.stockDate)}</td>
         <td>KSH ${item.itemPrice?.toFixed(2) || '0.00'}</td>
         <td>${item.quantity}</td>
         <td>KSH ${totalValue.toFixed(2)}</td>
@@ -83,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
           stockForm['part-number'].value = data.partNumber || '';
           stockForm['item-price'].value = data.itemPrice || '';
           stockForm['item-quantity'].value = data.quantity || '';
+          stockDateInput.value = data.stockDate || '';
 
           addItemBtn.textContent = 'Update Item';
         }
@@ -108,9 +120,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const partNumber = stockForm['part-number'].value.trim();
     const itemPrice = parseFloat(stockForm['item-price'].value);
     const itemQuantity = parseInt(stockForm['item-quantity'].value);
+    const stockDate = stockDateInput.value;
 
-    if (!itemName || isNaN(itemPrice) || isNaN(itemQuantity)) {
-      alert('Please fill in all required fields correctly.');
+    if (!itemName || isNaN(itemPrice) || isNaN(itemQuantity) || !stockDate) {
+      alert('Please fill in all required fields correctly, including the date.');
       return;
     }
 
@@ -128,6 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
           itemPrice,
           quantity: itemQuantity,
           totalValue,
+          stockDate,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         editingStockId = null;
@@ -140,6 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
           itemPrice,
           quantity: itemQuantity,
           totalValue,
+          stockDate,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }
@@ -155,7 +170,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Initial load
+  // View stock button click
   viewStockBtn.addEventListener('click', loadStock);
+
+  // Initial load
   loadStock();
 });
