@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Firebase config and initialization
+  // Initialize Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
     authDomain: "chanja-autos-d346c.firebaseapp.com",
@@ -31,14 +31,44 @@ document.addEventListener('DOMContentLoaded', function() {
   const descriptionInput = document.getElementById('description');
   const saleAmountInput = document.getElementById('sale-amount');
   const clientPhoneInput = document.getElementById('client-phone');
-
   // Credit sale auto-fill
   const creditPartNumberInput = document.getElementById('credit-part-number');
   const creditItemSoldInput = document.getElementById('credit-item-sold');
   const creditDescriptionInput = document.getElementById('credit-description');
   const creditPhoneInput = document.getElementById('credit-phone');
+  const salesRecordSelect = document.getElementById('sales-record-select');
 
-  // Auto-fill for credit sales from part number (includes phone number)
+  // --- Populate the Select Sale Record dropdown ---
+  async function loadSalesForCreditDropdown() {
+    if (!salesRecordSelect) return;
+    const snapshot = await db.collection('sales').orderBy('timestamp', 'desc').limit(50).get();
+    salesRecordSelect.innerHTML = '<option value="">Select Sale Record</option>';
+    snapshot.forEach(doc => {
+      const sale = doc.data();
+      const option = document.createElement('option');
+      option.value = doc.id;
+      option.textContent = `${sale.date} - ${sale.itemSold} (${sale.partNumber || ''})`;
+      option.dataset.itemSold = sale.itemSold || '';
+      option.dataset.partNumber = sale.partNumber || '';
+      option.dataset.description = sale.description || '';
+      option.dataset.phone = sale.clientPhone || '';
+      salesRecordSelect.appendChild(option);
+    });
+  }
+  loadSalesForCreditDropdown();
+
+  // --- Auto-fill credit form when a sale is selected ---
+  if (salesRecordSelect) {
+    salesRecordSelect.addEventListener('change', function() {
+      const selected = salesRecordSelect.options[salesRecordSelect.selectedIndex];
+      creditItemSoldInput.value = selected.dataset.itemSold || '';
+      creditPartNumberInput.value = selected.dataset.partNumber || '';
+      creditDescriptionInput.value = selected.dataset.description || '';
+      if (creditPhoneInput) creditPhoneInput.value = selected.dataset.phone || '';
+    });
+  }
+
+  // --- Part number auto-fill as fallback ---
   if (creditPartNumberInput) {
     creditPartNumberInput.addEventListener('input', async function() {
       const partNumber = this.value.trim();
@@ -155,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         { text: `Date: ${sale.date}`, style: "client", margin: [0, 0, 0, 10] },
         {
           table: {
-            widths: [38, 33, 28, 13, 23], // Adjusted for 58mm, no Total column
+            widths: [38, 33, 28, 13, 23],
             body: [
               [
                 { text: 'Item', bold: true, fontSize: 5 },
@@ -203,14 +233,14 @@ document.addEventListener('DOMContentLoaded', function() {
       defaultStyle: {
         fontSize: 5
       },
-      pageSize: { width: 165, height: 'auto' }, // 58mm = ~165pt
+      pageSize: { width: 165, height: 'auto' },
       pageMargins: [4, 4, 4, 4]
     };
 
     pdfMake.createPdf(docDefinition).print();
   }
 
-  // Group Receipt Print Handler (builds items with 'sold' field)
+  // Group Receipt Print Handler
   if (groupReceiptForm) {
     groupReceiptForm.addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -366,10 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         creditTableBody.appendChild(row);
       });
-      // Update the total credit display
-      if (totalCreditElement) {
-        totalCreditElement.textContent = totalCredit.toFixed(2);
-      }
+      if (totalCreditElement) totalCreditElement.textContent = totalCredit.toFixed(2);
     });
   }
 
