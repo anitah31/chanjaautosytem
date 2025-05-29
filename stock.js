@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const viewStockBtn = document.getElementById('viewStockBtn');
   const stockTableBody = document.getElementById('stockTableBody');
   const filterInput = document.getElementById('filterInput');
-  const stockDateInput = document.getElementById('stock-date');
+  const stockDateInput = document.getElementById('stock-date'); // Updated to match HTML input id
   const totalStockValueElement = document.getElementById('totalStockValue');
 
   let editingStockId = null;
@@ -73,10 +73,10 @@ document.addEventListener('DOMContentLoaded', function() {
       sumTotalValue += totalValue;
       const row = document.createElement('tr');
       row.innerHTML = `
+        <td>${stockDateFormatted(item.stockDate)}</td>
         <td>${item.itemName}</td>
         <td>${item.description || ''}</td>
         <td>${item.partNumber || ''}</td>
-        <td>${stockDateFormatted(item.stockDate)}</td>
         <td>KSH ${item.itemPrice?.toFixed(2) || '0.00'}</td>
         <td>${item.quantity}</td>
         <td>KSH ${totalValue.toFixed(2)}</td>
@@ -104,11 +104,11 @@ document.addEventListener('DOMContentLoaded', function() {
   stockForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const itemName = stockForm['item-name'].value.trim();
-    const description = stockForm['description'].value.trim();
-    const partNumber = stockForm['part-number'].value.trim();
-    const itemPrice = parseFloat(stockForm['item-price'].value);
-    const itemQuantity = parseInt(stockForm['item-quantity'].value);
+    const itemName = document.getElementById('item-name').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const partNumber = document.getElementById('part-number').value.trim();
+    const itemPrice = parseFloat(document.getElementById('item-price').value);
+    const itemQuantity = parseInt(document.getElementById('item-quantity').value);
     const stockDate = stockDateInput.value;
 
     if (!itemName || isNaN(itemPrice) || isNaN(itemQuantity) || !stockDate) {
@@ -134,7 +134,6 @@ document.addEventListener('DOMContentLoaded', function() {
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         editingStockId = null;
-        addItemBtn.textContent = 'Add Item';
       } else {
         await stockRef.add({
           itemName,
@@ -149,13 +148,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       stockForm.reset();
-      loadStock(); // Reload stock to include new/updated items
+      addItemBtn.textContent = 'Add Item';
+      loadStock();
 
     } catch (error) {
       alert('Failed to save stock item: ' + error.message);
     } finally {
       addItemBtn.disabled = false;
-      if (!editingStockId) addItemBtn.textContent = 'Add Item';
     }
   });
 
@@ -169,11 +168,11 @@ document.addEventListener('DOMContentLoaded', function() {
           const data = docSnap.data();
           editingStockId = docId;
 
-          stockForm['item-name'].value = data.itemName || '';
-          stockForm['description'].value = data.description || '';
-          stockForm['part-number'].value = data.partNumber || '';
-          stockForm['item-price'].value = data.itemPrice || '';
-          stockForm['item-quantity'].value = data.quantity || '';
+          document.getElementById('item-name').value = data.itemName || '';
+          document.getElementById('description').value = data.description || '';
+          document.getElementById('part-number').value = data.partNumber || '';
+          document.getElementById('item-price').value = data.itemPrice || '';
+          document.getElementById('item-quantity').value = data.quantity || '';
           stockDateInput.value = data.stockDate || '';
 
           addItemBtn.textContent = 'Update Item';
@@ -182,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Call attachEditListeners after every displayStock
+  // Override displayStock to attach edit listeners after rendering
   const originalDisplayStock = displayStock;
   displayStock = function(items) {
     originalDisplayStock(items);
