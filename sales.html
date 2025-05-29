@@ -120,6 +120,24 @@
           <label for="initial-payment">Initial Payment:</label>
           <input type="number" id="initial-payment" step="0.01" min="0" required />
         </div>
+        <div class="form-group">
+          <label for="sales-record-select">Select Sale Record:</label>
+          <select id="sales-record-select">
+            <option value="">Select Sale Record</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="credit-part-number">Part Number:</label>
+          <input type="text" id="credit-part-number" required />
+        </div>
+        <div class="form-group">
+          <label for="credit-item-sold">Item Name:</label>
+          <input type="text" id="credit-item-sold" readonly required />
+        </div>
+        <div class="form-group">
+          <label for="credit-description">Description:</label>
+          <input type="text" id="credit-description" readonly />
+        </div>
         <button type="submit">Add Credit</button>
       </form>
 
@@ -129,12 +147,15 @@
             <tr>
               <th>Client</th>
               <th>Phone Number</th>
+              <th>Item Name</th>
+              <th>Part Number</th>
+              <th>Description</th>
               <th>Credit Amount (KSH)</th>
               <th>Paid (KSH)</th>
               <th>Balance (KSH)</th>
               <th>Due Date</th>
               <th>Status</th>
-              <!-- Removed Actions column -->
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="creditTableBody"></tbody>
