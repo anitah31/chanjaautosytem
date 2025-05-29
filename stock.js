@@ -1,15 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize Firebase if not already initialized
+  // Initialize Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
+    authDomain: "chanja-autos-d346c.firebaseapp.com",
+    projectId: "chanja-autos-d346c",
+    storageBucket: "chanja-autos-d346c.appspot.com",
+    messagingSenderId: "316212921555",
+    appId: "1:316212921555:web:6d57b5fa4a59d4b05a4026",
+    measurementId: "G-6204GSZFKC"
+  };
   if (!firebase.apps.length) {
-    firebase.initializeApp({
-      apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
-      authDomain: "chanja-autos-d346c.firebaseapp.com",
-      projectId: "chanja-autos-d346c",
-      storageBucket: "chanja-autos-d346c.appspot.com",
-      messagingSenderId: "316212921555",
-      appId: "1:316212921555:web:6d57b5fa4a59d4b05a4026",
-      measurementId: "G-6204GSZFKC"
-    });
+    firebase.initializeApp(firebaseConfig);
   }
   const db = firebase.firestore();
   const stockRef = db.collection('stockmgt');
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const stockTableBody = document.getElementById('stockTableBody');
   const filterInput = document.getElementById('filterInput');
   const stockDateInput = document.getElementById('stock-date');
+  const totalStockValueElement = document.getElementById('totalStockValue');
 
   let editingStockId = null;
   let allStockItems = []; // Stores all stock items for filtering
@@ -56,16 +58,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Display stock items in table
+  // Display stock items in table and update total stock value
   function displayStock(items) {
     stockTableBody.innerHTML = '';
+    let sumTotalValue = 0;
     if (items.length === 0) {
       stockTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No stock items found.</td></tr>`;
+      if (totalStockValueElement) totalStockValueElement.textContent = "0.00";
       return;
     }
 
     items.forEach(item => {
       const totalValue = (item.itemPrice * item.quantity) || 0;
+      sumTotalValue += totalValue;
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${item.itemName}</td>
@@ -80,32 +85,16 @@ document.addEventListener('DOMContentLoaded', function() {
       stockTableBody.appendChild(row);
     });
 
-    // Attach edit button listeners
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const docId = btn.getAttribute('data-id');
-        const docSnap = await stockRef.doc(docId).get();
-        if (docSnap.exists) {
-          const data = docSnap.data();
-          editingStockId = docId;
-
-          stockForm['item-name'].value = data.itemName || '';
-          stockForm['description'].value = data.description || '';
-          stockForm['part-number'].value = data.partNumber || '';
-          stockForm['item-price'].value = data.itemPrice || '';
-          stockForm['item-quantity'].value = data.quantity || '';
-          stockDateInput.value = data.stockDate || '';
-
-          addItemBtn.textContent = 'Update Item';
-        }
-      });
-    });
+    // Update the total stock value display
+    if (totalStockValueElement) {
+      totalStockValueElement.textContent = sumTotalValue.toFixed(2);
+    }
   }
 
   // New filter functionality
   filterInput.addEventListener('input', function() {
     const filterText = this.value.trim().toLowerCase();
-    const filteredItems = allStockItems.filter(item => 
+    const filteredItems = allStockItems.filter(item =>
       item.itemName.toLowerCase().includes(filterText)
     );
     displayStock(filteredItems);
@@ -169,6 +158,36 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!editingStockId) addItemBtn.textContent = 'Add Item';
     }
   });
+
+  // Attach edit button listeners after displaying stock
+  function attachEditListeners() {
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const docId = btn.getAttribute('data-id');
+        const docSnap = await stockRef.doc(docId).get();
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          editingStockId = docId;
+
+          stockForm['item-name'].value = data.itemName || '';
+          stockForm['description'].value = data.description || '';
+          stockForm['part-number'].value = data.partNumber || '';
+          stockForm['item-price'].value = data.itemPrice || '';
+          stockForm['item-quantity'].value = data.quantity || '';
+          stockDateInput.value = data.stockDate || '';
+
+          addItemBtn.textContent = 'Update Item';
+        }
+      });
+    });
+  }
+
+  // Call attachEditListeners after every displayStock
+  const originalDisplayStock = displayStock;
+  displayStock = function(items) {
+    originalDisplayStock(items);
+    attachEditListeners();
+  };
 
   // View stock button click
   viewStockBtn.addEventListener('click', loadStock);
