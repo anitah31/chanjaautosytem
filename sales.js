@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize Firebase
+  // Firebase config and initialization
   const firebaseConfig = {
     apiKey: "AIzaSyCApEWbJdlmtbT8TyIMugaX5NXOO_5A-No",
     authDomain: "chanja-autos-d346c.firebaseapp.com",
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const creditForm = document.getElementById('creditForm');
   const creditTableBody = document.getElementById('creditTableBody');
   const totalSalesElement = document.getElementById('totalSales');
+  const totalCreditElement = document.getElementById('totalCredit');
   const viewSalesBtn = document.getElementById('viewSales');
   const viewCreditsBtn = document.getElementById('viewCredits');
   const filterDateInput = document.getElementById('filterDate');
@@ -35,17 +36,33 @@ document.addEventListener('DOMContentLoaded', function() {
   const creditPartNumberInput = document.getElementById('credit-part-number');
   const creditItemSoldInput = document.getElementById('credit-item-sold');
   const creditDescriptionInput = document.getElementById('credit-description');
+  const creditPhoneInput = document.getElementById('credit-phone');
 
-  // Auto-fill for credit sales from part number
+  // Auto-fill for credit sales from part number (includes phone number)
   if (creditPartNumberInput) {
     creditPartNumberInput.addEventListener('input', async function() {
       const partNumber = this.value.trim();
       if (!partNumber) {
         creditItemSoldInput.value = '';
         creditDescriptionInput.value = '';
+        if (creditPhoneInput) creditPhoneInput.value = '';
         return;
       }
       try {
+        // Try to get from the most recent sales record
+        const salesQuery = await db.collection('sales')
+          .where('partNumber', '==', partNumber)
+          .orderBy('timestamp', 'desc')
+          .limit(1)
+          .get();
+        if (!salesQuery.empty) {
+          const sale = salesQuery.docs[0].data();
+          creditItemSoldInput.value = sale.itemSold || '';
+          creditDescriptionInput.value = sale.description || '';
+          if (creditPhoneInput) creditPhoneInput.value = sale.clientPhone || '';
+          return;
+        }
+        // If not found in sales, fallback to stock
         const stockQuery = await db.collection('stockmgt')
           .where('partNumber', '==', partNumber)
           .limit(1)
@@ -54,12 +71,14 @@ document.addEventListener('DOMContentLoaded', function() {
           const stockItem = stockQuery.docs[0].data();
           creditItemSoldInput.value = stockItem.itemName || '';
           creditDescriptionInput.value = stockItem.description || '';
+          if (creditPhoneInput) creditPhoneInput.value = '';
         } else {
           creditItemSoldInput.value = '';
           creditDescriptionInput.value = '';
+          if (creditPhoneInput) creditPhoneInput.value = '';
         }
       } catch (error) {
-        console.error('Error fetching stock by part number:', error);
+        console.error('Error fetching by part number:', error);
       }
     });
   }
@@ -105,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return d.toISOString().split('T')[0];
   }
 
-  // Print Group Receipt Logic (NO LINES, font size 5, includes description and part number)
+  // Print Group Receipt Logic (NO LINES, font size 5, includes description and part number, no "Total" column in items)
   function generateGroupReceipt(sale) {
     let total = 0;
     let itemRows = [];
@@ -239,7 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
     deleteBtn.addEventListener('click', async () => {
       if (confirm('Are you sure you want to delete this record?')) {
         try {
-          // If deleting a sale, increment stock accordingly
           if (collection === 'sales') {
             const itemName = row.cells[3].textContent;
             const partNumber = row.cells[5].textContent;
@@ -298,9 +316,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // CREDIT SALES TABLE WITH ITEM, PART NO, DESCRIPTION
+  // CREDIT SALES TABLE WITH ITEM, PART NO, DESCRIPTION, and total credit calculation
   function loadCredits(query = db.collection("credits").orderBy("timestamp", "desc")) {
     creditTableBody.innerHTML = '';
+    let totalCredit = 0;
     query.onSnapshot((snapshot) => {
       creditTableBody.innerHTML = '';
       const today = new Date();
@@ -316,6 +335,8 @@ document.addEventListener('DOMContentLoaded', function() {
           db.collection("credits").doc(doc.id).delete();
           return;
         }
+
+        totalCredit += balance;
 
         let clientNameCell = `<td${isOverdue ? ' style="background-color: #d4edda;"' : ''}>${credit.client}</td>`;
         if (isOverdue && !credit.notifiedOverdue) {
@@ -345,6 +366,10 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         creditTableBody.appendChild(row);
       });
+      // Update the total credit display
+      if (totalCreditElement) {
+        totalCreditElement.textContent = totalCredit.toFixed(2);
+      }
     });
   }
 
@@ -397,7 +422,8 @@ document.addEventListener('DOMContentLoaded', function() {
       alert("Error recording sale: " + error.message);
     }
   });
-  // CREDIT FORM SUBMIT
+
+  // CREDIT FORM SUBMIT (INCLUDES ITEM, PART NO, DESC)
   creditForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const client = document.getElementById('credit-client').value.trim();
