@@ -167,8 +167,8 @@ function generateGroupReceipt(sale) {
               { text: 'Desc', bold: true, fontSize: 5 },
               { text: 'Part No.', bold: true, fontSize: 5 },
               { text: 'Qty', bold: true, fontSize: 5, alignment: 'center' },
-              { text: 'Price', bold: true, fontSize: 5, alignment: 'right' },
-              { text: 'Total', bold: true, fontSize: 5, alignment: 'right' }
+              { text: 'Price', bold: true, fontSize: 5, alignment: 'right' }
+             
             ],
             ...itemRows
           ]
