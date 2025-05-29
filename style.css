@@ -205,7 +205,7 @@ body {
 @media print {
   body {
     background: none !important;
-  }
+  }                                                                                 
   .receipt {
     box-shadow: none !important;
     border: none !important;
@@ -224,4 +224,61 @@ body {
   body *:not(.receipt):not(.receipt *) {
     display: none !important;
   }
+}
+
+.total-stock-value {
+  margin: 20px 0;
+  padding: 16px 28px;
+  background: #e8f5e9;
+  border: 2px solid #f6c1ff;
+  border-radius: 8px;
+  display: inline-block;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 1.25em;
+  font-weight: bold;
+  color: #f2e4f5;
+  box-shadow: 0 2px 8px rgba(67,160,71,0.07);
+}
+
+.total-stock-value span {
+  color: #9e12ee;
+  font-size: 1.3em;
+  font-weight: bold;
+  margin-left: 6px;
+}
+
+
+.total-sales,
+.total-credit,
+.total-stock-value {
+  margin: 24px 0 12px 0;
+  padding: 16px 24px;
+  background: #e6f3ff;
+  border: 2px solid #2196f3;
+  border-radius: 8px;
+  display: inline-block;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 1em;
+  font-weight: bold;
+  color: #1565c0;
+  box-shadow: 0 2px 8px rgba(33,150,243,0.04);
+}
+
+.total-sales h2,
+.total-credit h2,
+.total-stock-value h2 {
+  margin: 0;
+  font-size: 1em;
+  font-weight: bold;
+  color: #1565c0;
+  letter-spacing: 1px;
+}
+
+.total-sales span,
+.total-credit span,
+.total-stock-value span {
+  color: #2196f3;
+  font-size: 1em;
+  font-weight: bold;
+  margin-left: 8px;
 }
