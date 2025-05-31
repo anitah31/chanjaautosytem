@@ -297,3 +297,12 @@ body {
   font-weight: bold;
   margin-left: 8px;
 }
+.filter-section {
+  margin: 15px 0;
+}
+
+.filter-section input {
+  padding: 8px;
+  width: 250px;
+  margin-right: 10px;
+}
