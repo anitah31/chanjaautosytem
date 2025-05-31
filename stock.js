@@ -9,47 +9,44 @@ document.addEventListener('DOMContentLoaded', function() {
     appId: "1:316212921555:web:6d57b5fa4a59d4b05a4026",
     measurementId: "G-6204GSZFKC"
   };
+  
   if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
   }
+  
   const db = firebase.firestore();
   const stockRef = db.collection('stockmgt');
 
+  // DOM Elements
   const stockForm = document.getElementById('stockForm');
   const addItemBtn = document.getElementById('addItemBtn');
   const viewStockBtn = document.getElementById('viewStockBtn');
   const stockTableBody = document.getElementById('stockTableBody');
   const filterInput = document.getElementById('filterInput');
-  const stockDateInput = document.getElementById('stock-date'); // Updated to match HTML input id
+  const filterPartNumber = document.getElementById('filterPartNumber');
+  const stockDateInput = document.getElementById('stock-date');
   const totalStockValueElement = document.getElementById('totalStockValue');
 
   let editingStockId = null;
-  let allStockItems = []; // Stores all stock items for filtering
+  let allStockItems = [];
 
-  // Helper to format date
+  // Helper functions
   function stockDateFormatted(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString();
+    return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString();
   }
 
-  // Load and display stock items
+  // Load and display stock
   async function loadStock() {
     try {
       viewStockBtn.disabled = true;
       viewStockBtn.textContent = 'Loading...';
 
       const snapshot = await stockRef.orderBy('createdAt', 'desc').get();
-
-      allStockItems = [];
-      snapshot.forEach(doc => {
-        const item = doc.data();
-        allStockItems.push({ id: doc.id, ...item });
-      });
-
+      allStockItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
       displayStock(allStockItems);
-
     } catch (error) {
       alert('Error loading stock: ' + error.message);
     } finally {
@@ -58,137 +55,137 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Display stock items in table and update total stock value
+  // Display stock with filtering
   function displayStock(items) {
     stockTableBody.innerHTML = '';
     let sumTotalValue = 0;
+
     if (items.length === 0) {
-      stockTableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No stock items found.</td></tr>`;
-      if (totalStockValueElement) totalStockValueElement.textContent = "0.00";
+      stockTableBody.innerHTML = `<tr><td colspan="8" class="text-center">No stock items found</td></tr>`;
+      totalStockValueElement.textContent = "0.00";
       return;
     }
 
     items.forEach(item => {
-      const totalValue = (item.itemPrice * item.quantity) || 0;
+      const totalValue = (item.itemPrice || 0) * (item.quantity || 0);
       sumTotalValue += totalValue;
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${stockDateFormatted(item.stockDate)}</td>
-        <td>${item.itemName}</td>
-        <td>${item.description || ''}</td>
-        <td>${item.partNumber || ''}</td>
-        <td>KSH ${item.itemPrice?.toFixed(2) || '0.00'}</td>
-        <td>${item.quantity}</td>
-        <td>KSH ${totalValue.toFixed(2)}</td>
-        <td><button class="edit-btn" data-id="${item.id}">Edit</button></td>
+
+      const row = `
+        <tr>
+          <td>${stockDateFormatted(item.stockDate)}</td>
+          <td>${item.itemName}</td>
+          <td>${item.description || ''}</td>
+          <td>${item.partNumber || ''}</td>
+          <td>KSH ${(item.itemPrice || 0).toFixed(2)}</td>
+          <td>${item.quantity}</td>
+          <td>KSH ${totalValue.toFixed(2)}</td>
+          <td><button class="edit-btn" data-id="${item.id}">Edit</button></td>
+        </tr>
       `;
-      stockTableBody.appendChild(row);
+      stockTableBody.insertAdjacentHTML('beforeend', row);
     });
 
-    // Update the total stock value display
-    if (totalStockValueElement) {
-      totalStockValueElement.textContent = sumTotalValue.toFixed(2);
-    }
+    totalStockValueElement.textContent = sumTotalValue.toFixed(2);
+    attachEditListeners();
   }
 
-  // New filter functionality
-  filterInput.addEventListener('input', function() {
-    const filterText = this.value.trim().toLowerCase();
-    const filteredItems = allStockItems.filter(item =>
-      item.itemName.toLowerCase().includes(filterText)
-    );
-    displayStock(filteredItems);
-  });
+  // Filter functionality
+  function applyFilters() {
+    const nameFilter = filterInput.value.trim().toLowerCase();
+    const partFilter = filterPartNumber.value.trim().toLowerCase();
+    
+    const filtered = allStockItems.filter(item => {
+      const matchesName = item.itemName.toLowerCase().includes(nameFilter);
+      const matchesPart = item.partNumber?.toLowerCase().includes(partFilter);
+      return matchesName && (partFilter ? matchesPart : true);
+    });
+    
+    displayStock(filtered);
+  }
 
-  // Handle add/update stock
+  // Form submission handler
   stockForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const itemName = document.getElementById('item-name').value.trim();
-    const description = document.getElementById('description').value.trim();
-    const partNumber = document.getElementById('part-number').value.trim();
-    const itemPrice = parseFloat(document.getElementById('item-price').value);
-    const itemQuantity = parseInt(document.getElementById('item-quantity').value);
-    const stockDate = stockDateInput.value;
+    const formData = {
+      itemName: stockForm['item-name'].value.trim(),
+      description: stockForm['description'].value.trim(),
+      partNumber: stockForm['part-number'].value.trim(),
+      itemPrice: parseFloat(stockForm['item-price'].value),
+      quantity: parseInt(stockForm['item-quantity'].value),
+      stockDate: stockDateInput.value
+    };
 
-    if (!itemName || isNaN(itemPrice) || isNaN(itemQuantity) || !stockDate) {
-      alert('Please fill in all required fields correctly, including the date.');
+    // Validation
+    if (!formData.itemName || isNaN(formData.itemPrice) || 
+        isNaN(formData.quantity) || !formData.stockDate) {
+      alert('Please fill all required fields correctly');
       return;
     }
 
-    const totalValue = itemPrice * itemQuantity;
-
-    addItemBtn.disabled = true;
-    addItemBtn.textContent = editingStockId ? 'Updating...' : 'Adding...';
+    // Check for duplicate part number (only on new entries)
+    if (!editingStockId && formData.partNumber) {
+      const snapshot = await stockRef.where('partNumber', '==', formData.partNumber).get();
+      if (!snapshot.empty) {
+        alert('Error: This part number already exists in stock records!');
+        return;
+      }
+    }
 
     try {
+      addItemBtn.disabled = true;
+      addItemBtn.textContent = editingStockId ? 'Updating...' : 'Adding...';
+
+      const stockData = {
+        ...formData,
+        totalValue: formData.itemPrice * formData.quantity,
+        [editingStockId ? 'updatedAt' : 'createdAt']: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
       if (editingStockId) {
-        await stockRef.doc(editingStockId).update({
-          itemName,
-          description,
-          partNumber,
-          itemPrice,
-          quantity: itemQuantity,
-          totalValue,
-          stockDate,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        await stockRef.doc(editingStockId).update(stockData);
         editingStockId = null;
       } else {
-        await stockRef.add({
-          itemName,
-          description,
-          partNumber,
-          itemPrice,
-          quantity: itemQuantity,
-          totalValue,
-          stockDate,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        await stockRef.add(stockData);
       }
 
       stockForm.reset();
-      addItemBtn.textContent = 'Add Item';
       loadStock();
-
     } catch (error) {
-      alert('Failed to save stock item: ' + error.message);
+      alert('Operation failed: ' + error.message);
     } finally {
       addItemBtn.disabled = false;
+      addItemBtn.textContent = 'Add Item';
     }
   });
 
-  // Attach edit button listeners after displaying stock
+  // Edit functionality
   function attachEditListeners() {
     document.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const docId = btn.getAttribute('data-id');
-        const docSnap = await stockRef.doc(docId).get();
-        if (docSnap.exists) {
-          const data = docSnap.data();
+        const docId = btn.dataset.id;
+        const doc = await stockRef.doc(docId).get();
+        
+        if (doc.exists) {
           editingStockId = docId;
-
-          document.getElementById('item-name').value = data.itemName || '';
-          document.getElementById('description').value = data.description || '';
-          document.getElementById('part-number').value = data.partNumber || '';
-          document.getElementById('item-price').value = data.itemPrice || '';
-          document.getElementById('item-quantity').value = data.quantity || '';
+          const data = doc.data();
+          
+          stockForm['item-name'].value = data.itemName;
+          stockForm['description'].value = data.description || '';
+          stockForm['part-number'].value = data.partNumber || '';
+          stockForm['item-price'].value = data.itemPrice;
+          stockForm['item-quantity'].value = data.quantity;
           stockDateInput.value = data.stockDate || '';
-
+          
           addItemBtn.textContent = 'Update Item';
         }
       });
     });
   }
 
-  // Override displayStock to attach edit listeners after rendering
-  const originalDisplayStock = displayStock;
-  displayStock = function(items) {
-    originalDisplayStock(items);
-    attachEditListeners();
-  };
-
-  // View stock button click
+  // Event listeners
+  filterInput.addEventListener('input', applyFilters);
+  filterPartNumber.addEventListener('input', applyFilters);
   viewStockBtn.addEventListener('click', loadStock);
 
   // Initial load
